@@ -44,7 +44,7 @@ async fn run_client() -> io::Result<()> {
     };
 
     // Prepare the TLS client config
-    let tls = match ca {
+    let mut tls = match ca {
         Some(ref mut rd) => {
             // Read trust roots
             let certs = rustls_pemfile::certs(rd)
@@ -63,11 +63,14 @@ async fn run_client() -> io::Result<()> {
             .with_native_roots()
             .with_no_client_auth(),
     };
+
+    tls.key_log = std::sync::Arc::new(rustls::KeyLogFile::new());
+
     // Prepare the HTTPS connector
     let https = hyper_rustls::HttpsConnectorBuilder::new()
         .with_tls_config(tls)
         .https_or_http()
-        .enable_http1()
+        .enable_http2()
         .build();
 
     // Build the hyper client from the HTTPS connector.
